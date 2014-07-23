@@ -4,7 +4,7 @@ import sbt.Keys._
 object BuildSettings {
 
   val Name = "activator-spark"
-  val Version = "1.2.0"
+  val Version = "2.0.0"
   val ScalaVersion = "2.10.4"
 
   lazy val buildSettings = Defaults.defaultSettings ++ Seq (
@@ -19,37 +19,42 @@ object BuildSettings {
 
 
 object Resolvers {
-  // This is a temporary location within the Apache repo for the 1.0.0-RC3
-  // release of Spark.
-  val apache = "Apache Repository" at "https://repository.apache.org/content/repositories/orgapachespark-1012/"
   val typesafe = "Typesafe Repository" at "http://repo.typesafe.com/typesafe/releases/"
   val sonatype = "Sonatype Release" at "https://oss.sonatype.org/content/repositories/releases"
   val mvnrepository = "MVN Repo" at "http://mvnrepository.com/artifact"
 
-  val allResolvers = Seq(apache, typesafe, sonatype, mvnrepository)
+  val allResolvers = Seq(typesafe, sonatype, mvnrepository)
 
 }
 
 object Dependency {
   object Version {
-    val Spark      = "1.0.0"
-    val ScalaTest  = "2.1.4"
-    val ScalaCheck = "1.11.3"
+    val Spark        = "1.0.1"
+    val HadoopClient = "2.4.0"
+    val ScalaTest    = "2.1.4"
+    val ScalaCheck   = "1.11.3"
   }
 
-  val sparkCore      = "org.apache.spark" %% "spark-core"      % Version.Spark
-  val sparkStreaming = "org.apache.spark" %% "spark-streaming" % Version.Spark   
-  val sparkRepl      = "org.apache.spark" %% "spark-repl"      % Version.Spark   
+  val sparkCore      = "org.apache.spark"  %% "spark-core"      % Version.Spark
+  val sparkStreaming = "org.apache.spark"  %% "spark-streaming" % Version.Spark   
+  val sparkSQL       = "org.apache.spark"  %% "spark-sql"       % Version.Spark   
+  val sparkHive      = "org.apache.spark"  %% "spark-hive"      % Version.Spark   
+  val sparkRepl      = "org.apache.spark"  %% "spark-repl"      % Version.Spark   
+  // Hack: explicitly add this dependency to workaround an Avro related bug
+  // SPARK-1121? Appears to work! Otherwise, a java.lang.IncompatibleClassChangeError
+  // is thrown in the call to saveAsParquetFile in SparkSQL9.scala.
+  val hadoopClient   = "org.apache.hadoop"  % "hadoop-client"   % Version.HadoopClient 
 
-  val scalaTest      = "org.scalatest"    %% "scalatest"       % Version.ScalaTest  % "test"
-  val scalaCheck     = "org.scalacheck"   %% "scalacheck"      % Version.ScalaCheck % "test"
+  val scalaTest      = "org.scalatest"     %% "scalatest"       % Version.ScalaTest  % "test"
+  val scalaCheck     = "org.scalacheck"    %% "scalacheck"      % Version.ScalaCheck % "test"
 }
 
 object Dependencies {
   import Dependency._
 
   val activatorspark = 
-    Seq(sparkCore, sparkStreaming, sparkRepl, scalaTest, scalaCheck)
+    Seq(sparkCore, sparkStreaming, sparkSQL, sparkHive, sparkRepl, hadoopClient,
+      scalaTest, scalaCheck)
 }
 
 object ActivatorSparkBuild extends Build {
