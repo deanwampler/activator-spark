@@ -1,22 +1,22 @@
-name := "spark"
+name         := "spark"
 
-version := "3.0.0"
+version      := "3.0.0"
 
 scalaVersion := "2.10.4"
 
-organization  := "com.scalacourses"
+organization := "com.scalacourses"
 
-description   := "Spark Demo"
+description  := "Spark Demo"
 
 scalacOptions in (Compile, doc) <++= baseDirectory.map {
   (bd: File) => Seq[String](
      "-deprecation",
-       "-encoding", "UTF-8",
-       "-unchecked",
+     "-encoding", "UTF-8",
+     "-unchecked",
      "-feature",
-       "-target:jvm-1.6",
+     "-target:jvm-1.6",
      "-sourcepath", bd.getAbsolutePath,
-       "-Ywarn-adapted-args"
+     "-Ywarn-adapted-args"
   )
 }
 
@@ -26,11 +26,11 @@ resolvers ++= Seq(
 )
 
 libraryDependencies ++= Seq(
-  "org.apache.spark"  %% "spark-core"      % Version.spark,
-  "org.apache.spark"  %% "spark-streaming" % Version.spark,  
-  "org.apache.spark"  %% "spark-sql"       % Version.spark,  
-  "org.apache.spark"  %% "spark-hive"      % Version.spark,  
-  "org.apache.spark"  %% "spark-repl"      % Version.spark,  
+  "org.apache.spark"  %% "spark-core"      % Version.spark withSources(),
+  "org.apache.spark"  %% "spark-streaming" % Version.spark withSources(),
+  "org.apache.spark"  %% "spark-sql"       % Version.spark withSources(),
+  "org.apache.spark"  %% "spark-hive"      % Version.spark withSources(),
+  "org.apache.spark"  %% "spark-repl"      % Version.spark withSources(),
   "org.apache.hadoop"  % "hadoop-client"   % Version.hadoopClient,
   //
   "org.scalatest"     %% "scalatest"       % Version.scalaTest  % "test",
@@ -49,4 +49,3 @@ initialCommands := """
 // Only show warnings and errors on the screen for compilations.
 // This applies to both test:compile and compile and is Info by default
 logLevel in compile := Level.Warn
-
