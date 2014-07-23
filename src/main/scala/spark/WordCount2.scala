@@ -1,37 +1,20 @@
-package spark    // Put the code in a package named "spark"
+package spark
 
-import spark.util.Timestamp   // Simple date-time utility
+import spark.util.Timestamp
 import org.apache.spark.SparkContext
-// Implicit conversions, such as methods defined in 
-// org.apache.spark.rdd.PairRDDFunctions
-// (http://spark.apache.org/docs/0.9.0/api/core/index.html#org.apache.spark.rdd.PairRDDFunctions)
 import org.apache.spark.SparkContext._
 
-/**
- * First implementation of Word Count.
- * Scala makes the Singleton Design Pattern "first class". The "object" keyword
- * declares an class with a single instance that the runtime will create itself.
- * You put definitions in objects that would be declared static in Java, like
- * "main".
- */
-object WordCount2 {
-  def main(args: Array[String]) = {
+/** First implementation of Word Count. */
+object WordCount2 extends App {
+    val sc = new SparkContext("local", "Word Count 2")
 
-    // The first argument specifies the "master" (see the tutorial notes).
-    // The second argument is a name for the job. Additional arguments
-    // are optional.
-    val sc = new SparkContext("local", "Word Count (2)")
-
-    // Put the "stop" inside a finally clause, so it's invoked even when 
-    // something fails that forces an abnormal termination.
     try {
       // Load the King James Version of the Bible, then convert 
       // each line to lower case, creating an RDD.
       val input = sc.textFile("data/kjvdat.txt").map(line => line.toLowerCase)
 
       // Cache the RDD in memory for fast, repeated access.
-      // You don't have to do this and you shouldn't unless the data IS reused.
-      // Otherwise, you'll use RAM inefficiently.
+      // You don't have to do this and you shouldn't unless the data IS reused. Otherwise, you'll use RAM inefficiently.
       input.cache
 
       // Split on non-alphanumeric sequences of characters. Since each single 
@@ -83,5 +66,4 @@ object WordCount2 {
     //   What characteristics would you expect for this distribution? That is, 
     //   which words (or kinds of words) would you expect to occur most 
     //   frequently? What kind of distribution fits the counts (numbers)?
-  }
 }
