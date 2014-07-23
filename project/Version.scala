@@ -1,6 +1,3 @@
-import sbt._
-import Keys._
-
 object Version {
   val spark        = "1.0.1"
   val hadoopClient = "2.4.0"
