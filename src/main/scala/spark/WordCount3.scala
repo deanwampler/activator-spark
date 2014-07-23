@@ -1,71 +1,54 @@
 package spark
 
+import collection.Map
+import org.apache.spark.SparkContext
+import org.apache.spark.rdd.RDD
 import spark.util.CommandLineOptions
 import spark.util.Timestamp.now
-import org.apache.spark.SparkContext
-import org.apache.spark.SparkContext._
 
-/**
- * Second implementation of Word Count that makes the following changes:
+/** Second implementation of Word Count that makes the following changes:
  * <ol>
  * <li>A simpler approach is used for the algorithm.</li>
  * <li>A CommandLineOptions library is used.</li>
  * <li>The handling of the per-line data format is refined.</li>
- * </ol>
- */
+ * </ol> */
 object WordCount3 extends App {
-    // I extracted command-line processing code into a separate utility class,
-    // an illustration of how it's convenient that we can mix "normal" code
-    // with "big data" processing code.
-    val options = CommandLineOptions(
-      this.getClass.getSimpleName,
+    val argz = CommandLineOptions(
+      getClass.getSimpleName,
       CommandLineOptions.inputPath("data/kjvdat.txt"),
       CommandLineOptions.outputPath("output/kjv-wc3"),
       CommandLineOptions.master("local"),
-      CommandLineOptions.quiet)
-
-    val argz = options(args.toList)
+      CommandLineOptions.quiet)(args.toList)
 
     val sc = new SparkContext(argz("master").toString, "Word Count 3")
-
     try {
-      // Load the input text, convert each line to lower case, then split
-      // into fields:
-      //   book|chapter|verse|text
-      // Keep only the text. The output is an RDD.
-      // Note that calling "last" on the split array is robust against lines
-      // that don't have the delimiter, if any.
-      val input = sc.textFile(argz("input-path").toString)
-        .map(line => line.toLowerCase.split("\\s*\\|\\s*").last)
-
-      // Cache the RDD in memory for fast, repeated access.
-      // You don't have to do this and you shouldn't unless the data IS reused.
-      // Otherwise, you'll use RAM inefficiently.
-      input.cache()
+      val text: RDD[String] = (for {
+        line: String <- sc.textFile(argz("input-path").toString)
+        word: String = line.split("\\s*\\|\\s*").last
+      } yield word.toLowerCase).cache()
 
       // Split on non-alphanumeric sequences of character as before.
-      // Rather than map to "(word, 1)" tuples, we treat the words by values
-      // and count the unique occurrences.
-      val wc2 = input
-        .flatMap(_.split("""\W+"""))
-        .countByValue()  // Returns a Map[T, Long]
+      // Rather than transform into "(word, 1)" tuples, handle the words by collation value and count the unique occurrences.
+      val wc2: Map[String, Long] = (for {
+          token: String <- text
+          word: String <- token.split("""\W+""")
+        } yield word).countByValue()
 
-      // Save to a file, but because we no longer have an RDD, we have to use
-      // good 'ol Java File IO. Note that the output specifier is now a file,
-      // not a directory as before, the format of each line will be different,
+      // Save to a file, but because we no longer have an RDD, we have to use Java File IO.
+      // Because that the output specifier is now a file, not a directory as before, the format of each line will be different,
       // and the order of the output will not be the same, either.
       val outpath = s"${argz("output-path")}-$now"
       if (!argz("quiet").toBoolean)
         println(s"Writing output (${wc2.size} records) to: $outpath")
 
-      import java.io._
-      val out = new PrintWriter(outpath)
-      wc2 foreach {
-        case (word, count) => out.println("%20s\t%d".format(word, count))
+      val out = new java.io.PrintWriter(outpath)
+      try {
+        wc2 foreach {
+          case (word, count) => out.println("%20s\t%d".format(word, count))
+        }
+      } finally {
+        out.close() // flush out buffer
       }
-      // WARNING: Without this close statement, it appears the output stream is
-      // not completely flushed to disk!
-      out.close()
     } finally {
       sc.stop()
     }

@@ -9,15 +9,10 @@ import org.apache.spark.SparkContext._
 object WordCount2 extends App {
     val sc = new SparkContext("local", "Word Count 2")
     try {
-      // Load the King James Version of the Bible, then convert each line to lower case, creating an RDD.
-      val input = sc.textFile("data/kjvdat.txt").map(_.toLowerCase)
-      input.cache()
-
-      val tuples: RDD[(String, Int)] = for {
-        line <- input
-        word <- line.split("""\W+""")
-      } yield (word, 1)
-      val wc: RDD[(String, Int)] = tuples.reduceByKey(_ + _)
+      val wc: RDD[(String, Int)] = (for {
+        lineMixedCase: String <- sc.textFile("data/kjvdat.txt") // Load the King James Version of the Bible
+        word <- lineMixedCase.toLowerCase.split("""\W+""")
+      } yield (word, 1)).reduceByKey(_ + _)
 
       // Write Hadoop-style output to a directory, with a _SUCCESS marker (empty) file, the data as a "part" file, and checksum files.
       // Append a timestamp because Spark, like Hadoop, won't overwrite an existing directory, e.g., from a prior run.

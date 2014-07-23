@@ -1,50 +1,28 @@
 package spark.solns
 
 import spark.util.Timestamp.now
+import org.apache.spark.rdd.RDD
 import org.apache.spark.SparkContext
-// Implicit conversions, such as methods defined in
-// [org.apache.spark.rdd.PairRDDFunctions](http://spark.apache.org/docs/0.9.0/api/core/index.html#org.apache.spark.rdd.PairRDDFunctions)
 import org.apache.spark.SparkContext._
 
-/** First implementation of Word Count */
+/** Variation of Word Count with GroupBy 
+  * To run: `sbt 'runMain spark.solns.WordCount2GroupBy'` */
 object WordCount2GroupBy extends App {
-    val sc = new SparkContext("local", "Word Count (2)")
-
+    val sc = new SparkContext("local", "Word Count 2 with GroupBy")
     try {
-      // Load the King James Version of the Bible, then convert
-      // each line to lower case, creating an RDD.
-      val input = sc.textFile("data/kjvdat.txt").map(line => line.toLowerCase)
-
-      // Cache the RDD in memory for fast, repeated access.
-      // You don't hae to do this and you shouldn't unless the data IS reused.
-      // Otherwise, you'll use RAM inefficiently.
-      input.cache()
-
-      // Split on non-alphanumeric sequences of characters. Since each single
-      // line is converted to a sequence of words, we use flatMap to flatten
-      // the sequence of sequences into a single sequence of words.
-      // These words are then mapped into tuples that add a count of 1
-      // for the word.
-      // Finally, reduceByKey functions like a SQL "GROUP BY" followed by
-      // a count of the elements in each group. The words are the keys and
-      // values are the 1s, which are added together, effectively counting
-      // the occurrences of each word.
-      val wc = input
-        .flatMap(_.split("""\W+"""))
-        .map(word => (word, 1))
-        .reduceByKey(_ + _)
+      val wc: RDD[(Int, Iterable[(String, Int)])] = (for {
+        line: String <- sc.textFile("data/kjvdat.txt")
+        word: String <- line.split("""\W+""")
+      } yield (word.toLowerCase, 1))
+        .cache()
+        .reduceByKey(_ + _) // sum values, which are all ones
         .groupBy(_._2)   // group by the counts
         .sortByKey(ascending=true)
 
-      // Save, but it actually writes Hadoop-style output; to a directory,
-      // with a _SUCCESS marker (empty) file, the data as a "part" file,
-      // and checksum files.
-      // Note that when you look at the output, you'll see some very
-      // long lines for the many words that have very low counts (e.g., 1),
-      // while very frequent words (counts in the 1000s) usually don't overlap,
-      // e.g., "for" has 8971 occurrences, while "unto" has 8997, so they have
-      // nearly the same frequency, but not the exact same, so they aren't
-      // grouped together.
+      // Write Hadoop-style output; to a directory, with a _SUCCESS marker (empty) file, the data as a "part" file, and checksum files.
+      // The output has very long lines for the many words that have very low counts (e.g., 1),
+      // while very frequent words (counts in the 1000s) usually don't overlap, e.g., "for" has 8971 occurrences, while "unto" has 8997, so they have
+      // nearly the same frequency, but not the exact same, so they aren't grouped together.
       val out = s"output/kjv-wc2-group-by-count-$now"
       println(s"Writing output to: $out")
       wc.saveAsTextFile(out)
