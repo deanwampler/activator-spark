@@ -1,53 +1,42 @@
 package spark.solns
 
-import spark.util.CommandLineOptions
-import spark.util.Timestamp.now
 import org.apache.spark.SparkContext
 import org.apache.spark.SparkContext._
+import org.apache.spark.rdd.RDD
+import spark.util.CommandLineOptions
+import spark.util.Timestamp.now
+import util.matching.Regex
 
-/**
- * Inverted Index - Basis of Search Engines.
- * Implements two exercises, sorting by words and sorting the list of
- * (file_name, count) values by count descending.
- */
-object InvertedIndex5bSortByWordAndCounts {
-  def main(args: Array[String]) = {
-
-    val options = CommandLineOptions(
-      this.getClass.getSimpleName,
+/** Inverted Index - Basis of Search Engines.
+  * Implements two exercises, sorting by words and sorting the list of (file_name, count) values by count descending. */
+object InvertedIndex5bSortByWordAndCounts extends App {
+    val argz = CommandLineOptions(
+      getClass.getSimpleName,
       CommandLineOptions.inputPath("output/crawl"),
       CommandLineOptions.outputPath("output/inverted-index-sorted"),
       CommandLineOptions.master("local"),
-      CommandLineOptions.quiet)
-
-    val argz = options(args.toList)
+      CommandLineOptions.quiet)(args.toList)
 
     val sc = new SparkContext(argz("master").toString, "Inverted Index (5b)")
-
     try {
       // Load the input "crawl" data, where each line has the format:
       //   (document_id, text)
-      // First remove the outer parentheses, split on the first comma,
-      // trim whitespace from the name (we'll do it later for the text)
-      // and convert the text to lower case.
-      // NOTE: The args("input-path").toString is a directory; Spark finds the correct
-      // data files, part-NNNNN.
-      val lineRE = """^\s*\(([^,]+),(.*)\)\s*$""".r
-      val input = sc.textFile(argz("input-path").toString) map {
-        case lineRE(name, text) => (name.trim, text.toLowerCase)
-        case badLine =>
-          Console.err.println("Unexpected line: $badLine")
-          // If any of these were returned, you could filter them out below.
-          ("", "")
-      }
+      // First remove the outer parentheses, split on the first comma, trim whitespace from the name and convert the text to lower case.
+      // NOTE: The args("input-path").toString is a directory; Spark finds the correct data files, part-NNNNN.
+      val LineRE: Regex = """^\s*\(([^,]+),(.*)\)\s*$""".r
+      val input: RDD[(String, String)] = for {
+        line: String <- sc.textFile(argz("input-path").toString)
+        tokens: List[String] <- LineRE.unapplySeq(line) if tokens.size==2
+        name = tokens(0).trim
+        text = tokens(1).toLowerCase
+      } yield (name, text)
 
       val out = s"${argz("output-path")}-$now"
       if (!argz("quiet").toBoolean)
         println(s"Writing output to: $out")
 
       // Split on non-alphanumeric sequences of character as before.
-      // Rather than map to "(word, 1)" tuples, we treat the words by values
-      // and count the unique occurrences.
+      // Rather than map to "(word, 1)" tuples, we treat the words by values and count the unique occurrences.
       input
         .flatMap {
           case (path, text) =>
@@ -99,5 +88,4 @@ object InvertedIndex5bSortByWordAndCounts {
     //   The second is to use a variation of this algorithm called "term
     //   frequency-inverse document frequency" (TF-IDF). Look up this algorithm
     //   and implement it.
-  }
 }
