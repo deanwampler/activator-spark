@@ -923,7 +923,12 @@ run-main Matrix4 [ -h | --help] \
 
 The one new option is for specifying the dimensions, where the string `NxM` is parsed to mean `N` rows and `M` columns. The default is `5x10`.
 
-Like for `WordCount3`, there is also a `ex4` short cut for `run-main Matrix4`.
+Like for `WordCount3`, there is also a `ex4` short cut for `run-main Matrix4`:
+
+```
+run-main Crawl5a \
+  --outpath output/crawl --master local
+```
 
 For Hadoop, run [hadoop.HMatrix4](https://github.com/deanwampler/spark-scala-tutorial/blob/master/src/main/scala/sparktutorial/hadoop/HMatrix4.scala) using `run-main hadoop.HMatrix4`, the `hex4` alias, our use the bash script [scripts/matrix4.sh](https://github.com/deanwampler/spark-scala-tutorial/blob/master/scripts/hadoop.sh).
 
@@ -1010,7 +1015,12 @@ run-main Crawl5a [ -h | --help] \
   [-q | --quiet]
 ```
 
-Run with `run-main Crawl5a`, or the `ex5a` alias.
+Run with `run-main Crawl5a`, or the `ex5a` alias:
+
+```
+run-main InvertedIndex5b \
+  --outpath output/inverted-index --master local
+```
 
 `Crawl5a` uses a convenient `SparkContext` method `wholeTextFiles`, which is given a directory "glob". The default we use is `data/enron-spam-ham/*`, which expands to `data/enron-spam-ham/ham100` and `data/enron-spam-ham/spam100`. This method returns records of the form `(file_name, file_contents)`, where the `file_name` is the absolute path to a file found in one of the directories, and `file_contents` contains its contents, including nested linefeeds. To make it easier to run unit tests, `Crawl5a` strips off the leading path elements in the file name (not normally recommended) and it removes the embedded linefeeds, so that each final record is on a single line.
 
